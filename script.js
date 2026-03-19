@@ -4,8 +4,13 @@ const ctx = canvas.getContext('2d');
 // UI Elements
 const startOverlay = document.getElementById('startOverlay');
 const gameOverOverlay = document.getElementById('gameOverOverlay');
+const pauseOverlay = document.getElementById('pauseOverlay');
 const startButton = document.getElementById('startButton');
 const restartButton = document.getElementById('restartButton');
+const pauseButton = document.getElementById('pauseButton');
+const continueButton = document.getElementById('continueButton');
+const pauseRestartButton = document.getElementById('pauseRestartButton');
+const quitButton = document.getElementById('quitButton');
 
 // Score Elements & Game Over Message
 const scoreValue = document.getElementById('scoreValue');
@@ -295,6 +300,16 @@ function applyPlayerTriggeredScroll() {
 }
 
 function handleInput(event) {
+	if (event.key === 'Escape') {
+		event.preventDefault();
+		if (gameState === 'playing') {
+			pauseGame();
+		} else if (gameState === 'paused') {
+			continueGame();
+		}
+		return;
+	}
+
 	if (gameState !== 'playing') {
 		return;
 	}
@@ -511,7 +526,52 @@ function endGame(reason) {
 		localStorage.setItem('openTheFlowHighScore', `${highScore}`);
 	}
 
+	pauseOverlay.classList.remove('show');
 	gameOverOverlay.classList.add('show');
+}
+
+function pauseGame() {
+	if (gameState !== 'playing') {
+		return;
+	}
+
+	gameState = 'paused';
+	cancelAnimationFrame(animationId);
+	pauseOverlay.classList.add('show');
+}
+
+function continueGame() {
+	if (gameState !== 'paused') {
+		return;
+	}
+
+	gameState = 'playing';
+	lastTime = 0;
+	pauseOverlay.classList.remove('show');
+	animationId = requestAnimationFrame(gameLoop);
+}
+
+function restartFromPause() {
+	if (gameState !== 'paused') {
+		return;
+	}
+
+	pauseOverlay.classList.remove('show');
+	startGame();
+}
+
+function quitToMainMenu() {
+	if (gameState !== 'paused') {
+		return;
+	}
+
+	gameState = 'start';
+	cancelAnimationFrame(animationId);
+	setupNewGame();
+	drawGame();
+	pauseOverlay.classList.remove('show');
+	gameOverOverlay.classList.remove('show');
+	startOverlay.classList.add('show');
 }
 
 function setupNewGame() {
@@ -574,11 +634,16 @@ function startGame() {
 	lastTime = 0;
 	startOverlay.classList.remove('show');
 	gameOverOverlay.classList.remove('show');
+	pauseOverlay.classList.remove('show');
 	animationId = requestAnimationFrame(gameLoop);
 }
 
 startButton.addEventListener('click', startGame);
 restartButton.addEventListener('click', startGame);
+pauseButton.addEventListener('click', pauseGame);
+continueButton.addEventListener('click', continueGame);
+pauseRestartButton.addEventListener('click', restartFromPause);
+quitButton.addEventListener('click', quitToMainMenu);
 window.addEventListener('keydown', handleInput);
 
 drawGame();

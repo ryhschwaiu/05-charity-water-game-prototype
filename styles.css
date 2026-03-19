@@ -60,11 +60,17 @@ body {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+	gap: 8px;
 	background: white;
 	border: 2px solid var(--cw-light-blue);
 	border-radius: 8px;
 	padding: 8px 12px;
 	font-size: 0.95rem;
+}
+
+.pause-button {
+	padding: 6px 10px;
+	font-size: 0.85rem;
 }
 
 .game-frame {
@@ -128,4 +134,10 @@ button {
 
 button:hover {
 	background: #1f86db;
+}
+
+.overlay-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
 }

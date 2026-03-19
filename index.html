@@ -13,6 +13,7 @@
             <div class="score-board">
                 <span>People Served: <strong id="scoreValue">0</strong></span>
                 <span>High Score: <strong id="highScoreValue">0</strong></span>
+                <button id="pauseButton" type="button" class="pause-button">Pause</button>
             </div>
         </header>
 
@@ -38,6 +39,18 @@
                     <p id="gameOverMessage">The water caught you.</p>
                     <p>People Served: <strong id="finalScoreValue">0</strong></p>
                     <button id="restartButton" type="button">Restart</button>
+                </div>
+            </div>
+
+            <div id="pauseOverlay" class="overlay">
+                <div class="overlay-card">
+                    <h2>Paused</h2>
+                    <p>Game paused. The water is stopped.</p>
+                    <div class="overlay-actions">
+                        <button id="continueButton" type="button">Continue</button>
+                        <button id="pauseRestartButton" type="button">Restart</button>
+                        <button id="quitButton" type="button">Quit</button>
+                    </div>
                 </div>
             </div>
         </section>
