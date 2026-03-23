@@ -7,6 +7,7 @@ const gameOverOverlay = document.getElementById('gameOverOverlay');
 const pauseOverlay = document.getElementById('pauseOverlay');
 const startButton = document.getElementById('startButton');
 const restartButton = document.getElementById('restartButton');
+const mainMenuButton = document.getElementById('mainMenuButton');
 const pauseButton = document.getElementById('pauseButton');
 const continueButton = document.getElementById('continueButton');
 const pauseRestartButton = document.getElementById('pauseRestartButton');
@@ -16,6 +17,7 @@ const quitButton = document.getElementById('quitButton');
 const scoreValue = document.getElementById('scoreValue');
 const finalScoreValue = document.getElementById('finalScoreValue');
 const highScoreValue = document.getElementById('highScoreValue');
+const jerryCansValue = document.getElementById('jerryCansValue');
 const gameOverMessage = document.getElementById('gameOverMessage');
 
 // Game Constants
@@ -33,10 +35,17 @@ const START_PLAYER_COL = 0;
 canvas.width = GRID_COLS * TILE_SIZE;
 canvas.height = VISIBLE_ROWS * TILE_SIZE;
 
+// Load Jerry Can image
+const jerryCanImg = new Image();
+jerryCanImg.src = 'img/water-can-transparent.png';
+
 let waterLevel = -3;
 let score = 0;
-let highScore = Number(localStorage.getItem('openTheFlowHighScore') || 0);
+let jerryCansCollected = 0;
+let highScore = Number(localStorage.getItem('freeFlowHighScore') || 0);
+let jerryCansTotal = Number(localStorage.getItem('freeFlowJerryCans') || 0);
 highScoreValue.textContent = `${highScore}`;
+jerryCansValue.textContent = `${jerryCansTotal}`;
 
 let waterSpeed = BASE_WATER_SPEED;
 let guaranteedPathCol = START_PLAYER_COL;
@@ -154,6 +163,42 @@ function canGenerateHatchAt(rowIndex, colIndex) {
 	const connectedSides = getConnectedPipeSides(rowIndex, colIndex);
 	// Hatch rule: it only makes sense when exactly 2 connections exist.
 	return connectedSides.length === 2;
+}
+
+function maybeAddJerryCanToRow(rowIndex, depth = 0) {
+	if (rowIndex === START_PLAYER_ROW) {
+		return;
+	}
+
+	// Lower chance than hazards, for rarity balance
+	const jerryCanChance = Math.min(0.15 + depth * 0.002, 0.35);
+	if (Math.random() >= jerryCanChance) {
+		return;
+	}
+
+	const jerryCanCandidates = [];
+	for (let col = 0; col < GRID_COLS; col += 1) {
+		const tile = getTileAtWorld(rowIndex, col);
+		if (!tile || tile.hazard || tile.collectible) {
+			continue;
+		}
+
+		if (tile.type === 'pipe') {
+			jerryCanCandidates.push(col);
+		}
+	}
+
+	if (jerryCanCandidates.length === 0) {
+		return;
+	}
+
+	const randomIndex = Math.floor(Math.random() * jerryCanCandidates.length);
+	const jerryCanCol = jerryCanCandidates[randomIndex];
+	const targetTile = getTileAtWorld(rowIndex, jerryCanCol);
+
+	if (targetTile) {
+		targetTile.collectible = 'jerry_can';
+	}
 }
 
 function maybeAddHazardToRow(rowIndex, depth = 0) {
@@ -278,10 +323,12 @@ function scrollWorldDownOneTile() {
 	const nextRowData = generateRow(nextDepth, guaranteedPathCol);
 	rows.push(nextRowData.row);
 
-	// Add hazards to the second-to-last row, because it now has known neighbors above and below. This keeps hatch adjacency checks accurate.
+	// Add hazards and collectibles to the second-to-last row, because it now has known neighbors above and below.
+	// This keeps hatch adjacency checks accurate.
 	const eligibleHazardRow = worldTopRow + rows.length - 2;
 	if (eligibleHazardRow >= worldTopRow) {
 		maybeAddHazardToRow(eligibleHazardRow, Math.max(0, nextDepth - 1));
+		maybeAddJerryCanToRow(eligibleHazardRow, Math.max(0, nextDepth - 1));
 	}
 
 	guaranteedPathCol = nextRowData.nextRequiredCol;
@@ -355,6 +402,14 @@ function handleInput(event) {
 		if (currentTile && currentTile.hazard === 'pest') {
 			endGame('A pest got you.');
 			return;
+		}
+
+		// Collect jerry can if present
+		if (currentTile && currentTile.collectible === 'jerry_can') {
+			score += 3;
+			jerryCansCollected += 1;
+			currentTile.collectible = null;
+			scoreValue.textContent = `${score}`;
 		}
 
 		const progress = Math.max(0, player.row - START_PLAYER_ROW);
@@ -446,7 +501,18 @@ function drawTileVisual(tile, x, y) {
 	ctx.strokeStyle = '#d4e8f2';
 	ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
 
-	if (!tile.hazard) {
+	if (!tile.hazard && !tile.collectible) {
+		return;
+	}
+
+	// Draw Jerry Can image
+	if (tile.collectible === 'jerry_can') {
+		const imgSize = 50;
+		const imgX = x + (TILE_SIZE - imgSize) / 2;
+		const imgY = y + (TILE_SIZE - imgSize) / 2;
+		if (jerryCanImg.complete) {
+			ctx.drawImage(jerryCanImg, imgX, imgY, imgSize, imgSize);
+		}
 		return;
 	}
 
@@ -523,8 +589,38 @@ function endGame(reason) {
 	if (score > highScore) {
 		highScore = score;
 		highScoreValue.textContent = `${highScore}`;
-		localStorage.setItem('openTheFlowHighScore', `${highScore}`);
+		localStorage.setItem('freeFlowHighScore', `${highScore}`);
+
+    // Trigger "Fireworks" confetti celebration (Source: https://www.kirilv.com/canvas-confetti/. Optimized by Copilot.)
+    const duration = 3000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+    const interval = setInterval(function () {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: 0.1 + Math.random() * 0.2, y: Math.random() - 0.2 },
+      });
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: 0.7 + Math.random() * 0.2, y: Math.random() - 0.2 },
+      });
+    }, 250);
 	}
+
+	// Add collected jerry cans to the persistent total
+	jerryCansTotal += jerryCansCollected;
+	jerryCansValue.textContent = `${jerryCansTotal}`;
+	localStorage.setItem('freeFlowJerryCans', `${jerryCansTotal}`);
 
 	pauseOverlay.classList.remove('show');
 	gameOverOverlay.classList.add('show');
@@ -574,12 +670,26 @@ function quitToMainMenu() {
 	startOverlay.classList.add('show');
 }
 
+function gameOverToMainMenu() {
+	if (gameState !== 'game-over') {
+		return;
+	}
+
+	gameState = 'start';
+	cancelAnimationFrame(animationId);
+	setupNewGame();
+	drawGame();
+	gameOverOverlay.classList.remove('show');
+	startOverlay.classList.add('show');
+}
+
 function setupNewGame() {
 	rows = [];
 	worldTopRow = 0;
 	generationCount = 0;
 	guaranteedPathCol = START_PLAYER_COL;
 	score = 0;
+	jerryCansCollected = 0;
 	scoreValue.textContent = '0';
 
 	player = {
@@ -598,11 +708,11 @@ function setupNewGame() {
 		generationCount += 1;
 	}
 
-	// Now that the initial board is built, place hazards only on rows that have
-	// both a row above and below so hatch adjacency checks use complete context.
+	// Now that the initial board is built, place hazards and collectibles only on rows that have both a row above and below so hatch adjacency checks use complete context.
 	for (let localRow = 1; localRow < rows.length - 1; localRow += 1) {
 		const rowIndex = worldTopRow + localRow;
 		maybeAddHazardToRow(rowIndex, localRow);
+		maybeAddJerryCanToRow(rowIndex, localRow);
 	}
 
 	const spawnTile = getTileAtWorld(player.row, player.col);
@@ -638,12 +748,107 @@ function startGame() {
 	animationId = requestAnimationFrame(gameLoop);
 }
 
+// Touch Controls for Swiping
+let touchStartX = 0;
+let touchStartY = 0;
+
+function handleTouchStart(event) {
+	touchStartX = event.touches[0].clientX;
+	touchStartY = event.touches[0].clientY;
+}
+
+function handleTouchEnd(event) {
+	if (gameState !== 'playing') {
+		return;
+	}
+
+	const touchEndX = event.changedTouches[0].clientX;
+	const touchEndY = event.changedTouches[0].clientY;
+
+	const deltaX = touchEndX - touchStartX;
+	const deltaY = touchEndY - touchStartY;
+
+	// Minimum swipe distance to avoid accidental touches
+	const minSwipeDistance = 40;
+	const swipeDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+	// Handle tap (interact with current tile)
+	if (swipeDistance < minSwipeDistance) {
+		interactWithCurrentTile();
+		return;
+	}
+
+	// Determine which direction the swipe was primarily in
+	const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
+
+	if (player.moveCooldown > 0) {
+		return;
+	}
+
+	const nextPosition = { row: player.row, col: player.col };
+
+	if (isHorizontal) {
+		// Swipe left or right
+		if (deltaX < 0) {
+			nextPosition.col -= 1; // Swipe left
+		} else {
+			nextPosition.col += 1; // Swipe right
+		}
+	} else {
+		// Swipe up or down
+		if (deltaY < 0) {
+			nextPosition.row -= 1; // Swipe up
+		} else {
+			nextPosition.row += 1; // Swipe down
+		}
+	}
+
+	if (isValidMove(player.row, player.col, nextPosition.row, nextPosition.col)) {
+		const previousRow = player.row;
+		const previousCol = player.col;
+
+		player.row = nextPosition.row;
+		player.col = nextPosition.col;
+
+		const currentTile = getTileAtWorld(player.row, player.col);
+		if (currentTile && currentTile.hazard === 'pest') {
+			endGame('A pest got you.');
+			return;
+		}
+
+		// Collect jerry can if present
+		if (currentTile && currentTile.collectible === 'jerry_can') {
+			score += 3;
+			jerryCansCollected += 1;
+			currentTile.collectible = null;
+			scoreValue.textContent = `${score}`;
+		}
+
+		const progress = Math.max(0, player.row - START_PLAYER_ROW);
+		if (progress > score) {
+			score = progress;
+			scoreValue.textContent = `${score}`;
+		}
+
+		applyPlayerTriggeredScroll();
+
+		if (currentTile && currentTile.hazard === 'hatch' && currentTile.state === 'closed' && !currentTile.openSide) {
+			currentTile.openSide = getSideFromTo(previousRow, previousCol, player.row, player.col);
+		}
+
+		player.moveCooldown = 0.12;
+	}
+}
+
 startButton.addEventListener('click', startGame);
 restartButton.addEventListener('click', startGame);
+mainMenuButton.addEventListener('click', gameOverToMainMenu);
 pauseButton.addEventListener('click', pauseGame);
 continueButton.addEventListener('click', continueGame);
 pauseRestartButton.addEventListener('click', restartFromPause);
 quitButton.addEventListener('click', quitToMainMenu);
 window.addEventListener('keydown', handleInput);
+canvas.addEventListener('touchstart', handleTouchStart, false);
+canvas.addEventListener('touchend', handleTouchEnd, false);
 
 drawGame();

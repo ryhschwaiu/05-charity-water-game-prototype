@@ -32,8 +32,8 @@ Secondary Colors:
 body {
 	margin: 0;
 	font-family: Arial, sans-serif;
-	background: #f5fbff;
-	color: #123;
+	background: white;
+	color: var(--cw-dark-green);
 }
 
 .game-page {
@@ -62,7 +62,7 @@ body {
 	align-items: center;
 	gap: 8px;
 	background: white;
-	border: 2px solid var(--cw-light-blue);
+	border: 2px solid var(--cw-blue);
 	border-radius: 8px;
 	padding: 8px 12px;
 	font-size: 0.95rem;
@@ -85,7 +85,7 @@ body {
 	border: 3px solid var(--cw-blue);
 	border-radius: 10px;
 	display: block;
-	background: #ffffff;
+	background: white;
 }
 
 .overlay {
@@ -94,7 +94,7 @@ body {
 	display: none;
 	align-items: center;
 	justify-content: center;
-	background: rgba(0, 0, 0, 0.45);
+	background: rgba(11, 90, 199, 0.45);
 	padding: 16px;
 }
 
@@ -133,7 +133,7 @@ button {
 }
 
 button:hover {
-	background: #1f86db;
+	background: #0B5AC7;
 }
 
 .overlay-actions {

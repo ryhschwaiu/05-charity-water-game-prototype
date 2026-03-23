@@ -3,49 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Open the Flow</title>
+    <title>FreeFlow</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <main class="game-page">
         <header class="top-bar">
-            <h1>Open the Flow</h1>
+            <h1>FreeFlow</h1>
             <div class="score-board">
-                <span>People Served: <strong id="scoreValue">0</strong></span>
+                <span>Liters Delivered: <strong id="scoreValue">0</strong></span>
                 <span>High Score: <strong id="highScoreValue">0</strong></span>
+                <span>Jerry Cans: <strong id="jerryCansValue">0</strong></span>
                 <button id="pauseButton" type="button" class="pause-button">Pause</button>
             </div>
         </header>
 
         <section class="game-frame">
-            <canvas id="gameCanvas" width="360" height="720" aria-label="Open the Flow game area"></canvas>
+            <canvas id="gameCanvas" width="360" height="720" aria-label="FreeFlow game area"></canvas>
 
             <div id="startOverlay" class="overlay show">
                 <div class="overlay-card">
-                    <h2>Open the Flow</h2>
+                    <h2>FreeFlow</h2>
                     <p>Use arrow keys to move and Space to interact.</p>
                     <ul>
-                        <li>Stay ahead of the rising water.</li>
-                        <li>Open hatches and remove threats.</li>
-                        <li>Clear rows to serve more people.</li>
+                        <li>Stay ahead of the flowing water.</li>
+                        <li>Clear contaminants, open hatches, avoid pests.</li>
+                        <li>Collect Jerry cans for bonus score!</li>
+                        <li>Deliver as much water as you can!</li>
                     </ul>
-                    <button id="startButton" type="button">Start Game</button>
+                    <button id="startButton" type="button">Start</button>
                 </div>
             </div>
 
             <div id="gameOverOverlay" class="overlay">
                 <div class="overlay-card">
                     <h2>Game Over</h2>
-                    <p id="gameOverMessage">The water caught you.</p>
-                    <p>People Served: <strong id="finalScoreValue">0</strong></p>
-                    <button id="restartButton" type="button">Restart</button>
+                    <p id="gameOverMessage">You got caught by the flowing water!</p>
+                    <p>Liters Delivered: <strong id="finalScoreValue">0</strong></p>
+                    <div class="overlay-actions">
+                        <button id="restartButton" type="button">Restart</button>
+                        <button id="mainMenuButton" type="button">Main Menu</button>
+                    </div>
                 </div>
             </div>
 
             <div id="pauseOverlay" class="overlay">
                 <div class="overlay-card">
                     <h2>Paused</h2>
-                    <p>Game paused. The water is stopped.</p>
+                    <p>Game paused.</p>
                     <div class="overlay-actions">
                         <button id="continueButton" type="button">Continue</button>
                         <button id="pauseRestartButton" type="button">Restart</button>
@@ -56,6 +61,7 @@
         </section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
